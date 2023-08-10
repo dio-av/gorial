@@ -18,6 +18,11 @@ go build cmd/gorialApp.go
 
 Pass the flags setting the baud rate (115200 default) and the COM Port name:
 
+Windows:
 ``` bash
 gorialApp.exe -baud=115200 -port="COM3"
+```
+Linux:
+``` bash
+gorialApp.exe -baud=115200 -port="/dev/ttyUSB0"
 ```
