@@ -48,7 +48,7 @@ func main() {
 	interrupt := <-c
 	fmt.Println("Got signal:", interrupt)
 	close(c)
-	err = s.port.Close()
+	err = s.Port.Close()
 	fmt.Println("closing COM port", s.Name)
 	if err != nil {
 		log.Fatalln("error closing serial:", s.Name, err)
