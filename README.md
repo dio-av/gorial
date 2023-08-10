@@ -3,7 +3,7 @@ Serial port communication and debugger in your terminal
 
 # Usage
 
-Clonning the repo:
+Cloning the repo:
 
 ``` bash
 git clone https://github.com/dio-av/gorial.git
@@ -18,11 +18,11 @@ go build cmd/gorialApp.go
 
 Pass the flags setting the baud rate (115200 default) and the COM Port name:
 
-Windows:
+- Windows
 ``` bash
 gorialApp.exe -baud=115200 -port="COM3"
 ```
-Linux:
+- Linux
 ``` bash
-gorialApp.exe -baud=115200 -port="/dev/ttyUSB0"
+./gorialApp -baud=115200 -port="/dev/ttyUSB0"
 ```
