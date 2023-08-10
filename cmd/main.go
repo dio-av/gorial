@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/dio-av/gorial"
 )
 
 const (
@@ -25,7 +27,7 @@ func init() {
 }
 
 func main() {
-	_, err := gori.GetPorts()
+	_, err := gorial.GetPorts()
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -33,7 +35,7 @@ func main() {
 	if portName == "" {
 		log.Fatalln("port name cannot be empty")
 	}
-	s, err := gori.NewSerial(baud, portName)
+	s, err := gorial.NewSerial(baud, portName)
 	if err != nil {
 		log.Fatalln(err)
 	}
