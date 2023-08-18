@@ -21,54 +21,52 @@ type Serial struct {
 }
 
 func NewSerial(baud int, com string) (*Serial, error) {
-	var s Serial
-	s.Mode.BaudRate = baud
-	s.Name = com
-	p, err := serial.Open(com, &s.Mode)
+	p, err := serial.Open(com, &serial.Mode{BaudRate: baud})
 	if err != nil {
-		return &Serial{}, fmt.Errorf("error creating new serial: %s  %q", com, err)
+		return &Serial{}, fmt.Errorf("error creating new serial: %s %q", com, err)
 	}
-	s.Port = p
-	return &s, nil
+	return &Serial{
+		Mode: serial.Mode{
+			BaudRate: baud,
+		},
+		Name: com,
+		Port: p,
+	}, nil
 }
 
 func (s *Serial) ChangeMode(m *serial.Mode) error {
 	err := s.Port.SetMode(m)
-	return err
+	return fmt.Errorf("error changing serial mode %q", err)
 }
 
 func (s *Serial) WritePort(message string) error {
-	n, err := s.Port.Write([]byte(message + "\n\r"))
+	n, err := s.Port.Write([]byte(message + "\r\n"))
 	if err != nil {
 		return fmt.Errorf("error %q writing to port %v", err, s.Name)
 	}
-	fmt.Printf("%d written to %v port\n", n, s.Name)
+	fmt.Printf("%d bytes written to %v port\n", n, s.Name)
 	return nil
 }
 
-func (s *Serial) ReadPort() {
+func (s *Serial) ReadPort() error {
 	buff := make([]byte, BUFFER_READ)
-	reader := bufio.NewReader(s.Port)
+	scanner := bufio.NewScanner(s.Port)
 	for {
 		n, err := s.Port.Read(buff)
 		if err != nil {
-			log.Fatal(err)
-			break
+			return fmt.Errorf("error reading port %s %q", s.Name, err)
 		}
 		if n == 0 {
 			fmt.Println("\nEOF")
 			break
-		} else if n > BUFFER_READ {
-			fmt.Println("input size too big")
-			break
 		}
-		reply, err := reader.ReadBytes('\r')
-		if err != nil {
-			log.Fatal(err)
+		for scanner.Scan() {
+			reply := scanner.Text()
+			reply = strings.Trim(reply, "\r\b\n")
+			fmt.Printf("Read %d bytes from %v: %q\n", len(reply), s.Name, string(reply))
 		}
-		r := strings.Trim(string(reply), "\r")
-		fmt.Printf("Read %d bytes from %v: %q\n", len(reply), s.Name, string(r))
 	}
+	return nil
 }
 
 func GetPorts() ([]string, error) {
