@@ -3,6 +3,8 @@ Serial port communication and debugger in your terminal
 
 # Usage
 
+You need at least Go version 1.21.0 installed.
+
 Cloning the repo:
 
 ``` bash
@@ -24,5 +26,5 @@ gorialApp.exe -baud=115200 -port="COM3"
 ```
 - Linux
 ``` bash
-./gorialApp -baud=115200 -port="/dev/ttyUSB0"
+./gorialApp -baud=115200 -port="/dev/ttyUSB1"
 ```
