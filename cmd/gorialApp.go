@@ -11,10 +11,6 @@ import (
 	"github.com/dio-av/gorial"
 )
 
-const (
-	BUFFER_READ = 64
-)
-
 var (
 	baud     int
 	portName string
