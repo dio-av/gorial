@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 
 	"go.bug.st/serial"
 )
@@ -18,6 +17,11 @@ type Serial struct {
 	Mode serial.Mode
 	Port serial.Port
 	Name string
+}
+
+type serialResponse struct {
+	b   []byte
+	err error
 }
 
 func NewSerial(baud int, com string) (*Serial, error) {
@@ -48,25 +52,26 @@ func (s *Serial) WritePort(message string) error {
 	return nil
 }
 
-func (s *Serial) ReadPort() error {
+func (s *Serial) ReadPort(sr chan serialResponse) {
 	buff := make([]byte, BUFFER_READ)
-	scanner := bufio.NewScanner(s.Port)
+	r := &serialResponse{}
+	//scanner := bufio.NewScanner(s.Port)
 	for {
 		n, err := s.Port.Read(buff)
+		fmt.Printf("Received %d bytes from %s: %s\n", n, s.Name, buff)
 		if err != nil {
-			return fmt.Errorf("error reading port %s %q", s.Name, err)
+			r.b = []byte{}
+			r.err = fmt.Errorf("error reading port %s %q", s.Name, err)
+			sr <- *r
 		}
 		if n == 0 {
 			fmt.Println("\nEOF")
 			break
 		}
-		for scanner.Scan() {
-			reply := scanner.Text()
-			reply = strings.Trim(reply, "\r\b\n")
-			fmt.Printf("Read %d bytes from %v: %q\n", len(reply), s.Name, string(reply))
-		}
+		fmt.Printf("buff buff %v", string(buff[:n]))
+		r.b = buff[:n]
+		sr <- *r
 	}
-	return nil
 }
 
 func GetPorts() ([]string, error) {
@@ -84,7 +89,8 @@ func GetPorts() ([]string, error) {
 }
 
 func (s *Serial) StartAsyncSerial() {
-	go s.ReadPort()
+	c := make(chan serialResponse)
+	go s.ReadPort(c)
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("write the message you want to send to port: ", s.Name)
 	for scanner.Scan() {
