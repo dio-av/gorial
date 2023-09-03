@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"go.bug.st/serial"
 )
@@ -55,10 +56,8 @@ func (s *Serial) WritePort(message string) error {
 func (s *Serial) ReadPort(sr chan serialResponse) {
 	buff := make([]byte, BUFFER_READ)
 	r := &serialResponse{}
-	//scanner := bufio.NewScanner(s.Port)
 	for {
 		n, err := s.Port.Read(buff)
-		fmt.Printf("Received %d bytes from %s: %s\n", n, s.Name, buff)
 		if err != nil {
 			r.b = []byte{}
 			r.err = fmt.Errorf("error reading port %s %q", s.Name, err)
@@ -68,9 +67,11 @@ func (s *Serial) ReadPort(sr chan serialResponse) {
 			fmt.Println("\nEOF")
 			break
 		}
-		fmt.Printf("buff buff %v", string(buff[:n]))
-		r.b = buff[:n]
-		sr <- *r
+		fmt.Printf("Received %d bytes from %s: %s\n", n, s.Name, buff)
+		if strings.ContainsRune(string(buff), '\r') {
+			r.b = buff
+			sr <- *r
+		}
 	}
 }
 
