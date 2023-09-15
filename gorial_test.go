@@ -34,7 +34,7 @@ func TestReadPort(t *testing.T) {
 	got := (<-c)
 	if string(got.b) != expected {
 		s9600.Port.Close()
-		t.Fatalf("got a message different of what expected. got %v expect %v", got, expected)
+		t.Fatalf("fail: got a message different of what expected. got %v expect %v", got, expected)
 	}
 	s9600.Port.Close()
 }
@@ -49,7 +49,7 @@ func TestWritePort(t *testing.T) {
 
 	if string(got) != expected {
 		s9600.Port.Close()
-		t.Fatalf("got a message different of what expected. got %v expect %v", got, expected)
+		t.Fatalf("fail: got a message different of what expected. got %v expect %v", got, expected)
 	}
 	s9600.Port.Close()
 }

@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	BUFFER_READ = 64
+	BUFFER_READ = 256
 )
 
 type Serial struct {
@@ -54,22 +54,29 @@ func (s *Serial) WritePort(message string) error {
 }
 
 func (s *Serial) ReadPort(sr chan serialResponse) {
-	buff := make([]byte, BUFFER_READ)
-	r := &serialResponse{}
 	for {
+		r := &serialResponse{}
+		message := ""
+		buff := make([]byte, BUFFER_READ)
 		n, err := s.Port.Read(buff)
 		if err != nil {
 			r.b = []byte{}
+			fmt.Printf("error: at ReadPort reading message %q", err)
 			r.err = fmt.Errorf("error reading port %s %q", s.Name, err)
 			sr <- *r
-		}
-		if n == 0 {
+		} else if n == 0 {
 			fmt.Println("\nEOF")
 			break
+		} else if n > BUFFER_READ {
+			fmt.Println("buffer with invalid size")
+			break
 		}
-		fmt.Printf("Received %d bytes from %s: %s\n", n, s.Name, buff)
-		if strings.ContainsRune(string(buff), '\r') {
-			r.b = buff
+		fmt.Printf("Received %d bytes from %s: %s\n", n, s.Name, buff[:n])
+		message += string(buff[:n])
+
+		if final, has := strings.CutSuffix(message, "\r\n"); has {
+			r.b = []byte(final)
+			fmt.Printf("sending to serialResponse channel %d bytes from %s: %s\n", n, s.Name, r.b)
 			sr <- *r
 		}
 	}
