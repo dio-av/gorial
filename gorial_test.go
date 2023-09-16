@@ -16,7 +16,7 @@ func TestNewSerial(t *testing.T) {
 
 	s38400, err := NewSerial(38400, "ABCD")
 	if err == nil {
-		t.Error("new serial with and invalid name should return an error")
+		t.Error("fail: new serial with and invalid name should return an error")
 	}
 	s38400.Port.Close()
 }
