@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 
 	"go.bug.st/serial"
 )
@@ -15,8 +16,8 @@ const (
 )
 
 type Serial struct {
-	Mode serial.Mode
-	Port serial.Port
+	Mode *serial.Mode
+	Port *serial.Port
 	Name string
 }
 
@@ -31,21 +32,21 @@ func NewSerial(baud int, com string) (*Serial, error) {
 		return &Serial{}, fmt.Errorf("error creating new serial: %s %q", com, err)
 	}
 	return &Serial{
-		Mode: serial.Mode{
+		Mode: &serial.Mode{
 			BaudRate: baud,
 		},
 		Name: com,
-		Port: p,
+		Port: &p,
 	}, nil
 }
 
 func (s *Serial) ChangeMode(m *serial.Mode) error {
-	err := s.Port.SetMode(m)
+	err := (*s.Port).SetMode(m)
 	return fmt.Errorf("error changing serial mode %q", err)
 }
 
 func (s *Serial) WritePort(message string) error {
-	n, err := s.Port.Write([]byte(message + "\r\n"))
+	n, err := (*s.Port).Write([]byte(message + "\r\n"))
 	if err != nil {
 		return fmt.Errorf("error %q writing to port %v", err, s.Name)
 	}
@@ -53,33 +54,66 @@ func (s *Serial) WritePort(message string) error {
 	return nil
 }
 
-func (s *Serial) ReadPort(sr chan serialResponse) {
-	for {
-		r := &serialResponse{}
-		message := ""
-		buff := make([]byte, BUFFER_READ)
-		n, err := s.Port.Read(buff)
-		if err != nil {
-			r.b = []byte{}
-			fmt.Printf("error: at ReadPort reading message %q", err)
-			r.err = fmt.Errorf("error reading port %s %q", s.Name, err)
-			sr <- *r
-		} else if n == 0 {
-			fmt.Println("\nEOF")
-			break
-		} else if n > BUFFER_READ {
-			fmt.Println("buffer with invalid size")
-			break
-		}
-		fmt.Printf("Received %d bytes from %s: %s\n", n, s.Name, buff[:n])
-		message += string(buff[:n])
+// func (s *Serial) ReadPort(sr chan serialResponse) {
+// 	for {
+// 		r := &serialResponse{}
+// 		message := ""
+// 		buff := make([]byte, BUFFER_READ)
+// 		n, err := s.Port.Read(buff)
+// 		if err != nil {
+// 			r.b = []byte{}
+// 			fmt.Printf("error: at ReadPort reading message %q", err)
+// 			r.err = fmt.Errorf("error reading port %s %q", s.Name, err)
+// 			sr <- *r
+// 		} else if n == 0 {
+// 			fmt.Println("\nEOF")
+// 			break
+// 		} else if n > BUFFER_READ {
+// 			fmt.Println("buffer with invalid size")
+// 			break
+// 		}
+// 		fmt.Printf("Received %d bytes from %s: %s\n", n, s.Name, buff[:n])
+// 		message += string(buff[:n])
 
-		if final, has := strings.CutSuffix(message, "\r\n"); has {
-			r.b = []byte(final)
-			fmt.Printf("sending to serialResponse channel %d bytes from %s: %s\n", n, s.Name, r.b)
-			sr <- *r
+// 		if final, has := strings.CutSuffix(message, "\r\n"); has {
+// 			r.b = []byte(final)
+// 			fmt.Printf("sending to serialResponse channel %d bytes from %s: %s\n", n, s.Name, r.b)
+// 			sr <- *r
+// 		}
+// 	}
+// }
+
+func (s *Serial) ReadPort(data chan []byte) error {
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	go func() {
+		bufferTotal := make([]byte, 4096)
+		defer wg.Done()
+		for {
+			buff := make([]byte, 1024)
+			if s.Port != nil {
+				n, err := (*s.Port).Read(buff)
+				if err != nil {
+					log.Println("error reading serial", s.Name, err)
+				}
+				if n == 0 {
+					break
+				}
+				fmt.Printf("received %s\n", string(buff[:n]))
+				buff = []byte(strings.Trim(string(buff), "\x00/"))
+				bufferTotal = append(bufferTotal, buff...)
+
+				if strings.Contains(string(bufferTotal), "\n") {
+					fmt.Printf("buffer total: %s\n", string(bufferTotal))
+					data <- bufferTotal
+					bufferTotal = []byte{}
+				}
+			}
 		}
-	}
+	}()
+	wg.Wait()
+	return nil
 }
 
 func GetPorts() ([]string, error) {
@@ -97,7 +131,7 @@ func GetPorts() ([]string, error) {
 }
 
 func (s *Serial) StartAsyncSerial() {
-	c := make(chan serialResponse)
+	c := make(chan []byte)
 	go s.ReadPort(c)
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("write the message you want to send to port: ", s.Name)
@@ -110,7 +144,7 @@ func (s *Serial) StartAsyncSerial() {
 
 func PortsCleanUp(ss []Serial) error {
 	for _, s := range ss {
-		err := s.Port.Close()
+		err := (*s.Port).Close()
 		fmt.Println("closing COM port", s.Port)
 		if err != nil {
 			log.Fatalln("error closing serial:", s.Name, err)
