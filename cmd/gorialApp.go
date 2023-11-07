@@ -18,7 +18,7 @@ var (
 
 func init() {
 	flag.IntVar(&baud, "baud", 115_200, "select com port baudrate")
-	flag.StringVar(&portName, "port", "", "select wich port to open")
+	flag.StringVar(&portName, "port", "", "select which port to open")
 	flag.Parse()
 }
 

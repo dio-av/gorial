@@ -54,35 +54,6 @@ func (s *Serial) WritePort(message string) error {
 	return nil
 }
 
-// func (s *Serial) ReadPort(sr chan serialResponse) {
-// 	for {
-// 		r := &serialResponse{}
-// 		message := ""
-// 		buff := make([]byte, BUFFER_READ)
-// 		n, err := s.Port.Read(buff)
-// 		if err != nil {
-// 			r.b = []byte{}
-// 			fmt.Printf("error: at ReadPort reading message %q", err)
-// 			r.err = fmt.Errorf("error reading port %s %q", s.Name, err)
-// 			sr <- *r
-// 		} else if n == 0 {
-// 			fmt.Println("\nEOF")
-// 			break
-// 		} else if n > BUFFER_READ {
-// 			fmt.Println("buffer with invalid size")
-// 			break
-// 		}
-// 		fmt.Printf("Received %d bytes from %s: %s\n", n, s.Name, buff[:n])
-// 		message += string(buff[:n])
-
-// 		if final, has := strings.CutSuffix(message, "\r\n"); has {
-// 			r.b = []byte(final)
-// 			fmt.Printf("sending to serialResponse channel %d bytes from %s: %s\n", n, s.Name, r.b)
-// 			sr <- *r
-// 		}
-// 	}
-// }
-
 func (s *Serial) ReadPort(data chan []byte) error {
 	var wg sync.WaitGroup
 	wg.Add(1)
